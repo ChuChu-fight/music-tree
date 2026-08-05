@@ -37,6 +37,8 @@ export type CompletedPiece = {
   pieceName: string
   completionDate: string
   confirmedBy: 'parent' | 'teacher'
+  homeworkItemId?: string
+  lessonEvaluationId?: string
   note?: string
 }
 

@@ -1,97 +1,107 @@
-import { TREE_BRANCHES, TREE_FLOWER_SLOTS, TREE_FRUIT_SLOTS, TREE_LEAF_SLOTS, TREE_STAGE_BLUEPRINTS, type TreeStage } from '../../domain/treeStageBlueprints'
-import type { TreeState } from '../../domain/types'
-
-const stageScale = {
-  1: 0.82,
-  2: 0.92,
-  3: 1.08,
-  4: 1.2,
-  5: 1.34,
-} as const
+import {
+  TREE_BRANCHES,
+  TREE_FLOWER_SLOTS,
+  TREE_STAGE_BLUEPRINTS,
+  type TreeStage,
+} from '../../domain/treeStageBlueprints'
+import { createMusicFruitRenderPlan } from '../../domain/fruitRendering'
 
 type TreeStructureProps = {
   stage: TreeStage
-  treeState: TreeState
+  flowerCount: number
+  fruitCount: number
+  crownTransform: string
+  onFlowerSelect?: (slotId: string) => void
+  onFruitSelect?: (slotId: string) => void
 }
 
-export function TreeStructure({ stage, treeState: _treeState }: TreeStructureProps) {
+export function TreeStructure({ stage, flowerCount, fruitCount, crownTransform, onFlowerSelect, onFruitSelect }: TreeStructureProps) {
   const blueprint = TREE_STAGE_BLUEPRINTS[stage]
-  const visibleBranches = TREE_BRANCHES.filter((branch) => branch.unlockedAtStage <= stage)
-
-  const showBranch = (branchId: string) => visibleBranches.some((branch) => branch.id === branchId)
+  const branchIds = new Set(blueprint.branchIds)
+  const branches = TREE_BRANCHES.filter((branch) => branchIds.has(branch.id) && branch.visible !== false)
+  const flowers = TREE_FLOWER_SLOTS.filter((slot) => blueprint.availableFlowerSlotIds.includes(slot.id)).slice(0, Math.max(0, flowerCount))
+  const fruitPlan = createMusicFruitRenderPlan(stage, fruitCount)
 
   return (
-    <g className="tree-structure" transform={`translate(0 0) scale(${stageScale[stage]})`}>
-      <g className="tree-stage-1-structure">
-        <path d="M160 322 L160 168" stroke="rgba(126, 112, 168, 0.95)" strokeWidth="12" strokeLinecap="round" fill="none" />
-        <path d="M160 182 L140 212 L125 247 L116 286" stroke="rgba(139, 151, 202, 0.9)" strokeWidth="8" fill="none" strokeLinecap="round" />
-        <path d="M160 182 L180 212 L195 247 L204 286" stroke="rgba(139, 151, 202, 0.9)" strokeWidth="8" fill="none" strokeLinecap="round" />
-      </g>
-
-      <g className="tree-stage-2-additions">
-        {showBranch('branch_left_upper') && (
-          <path d="M160 180 C 132 154, 116 120, 111 88" stroke="rgba(97, 117, 176, 1)" strokeWidth="7" fill="none" strokeLinecap="round" />
-        )}
-        {showBranch('branch_right_upper') && (
-          <path d="M160 180 C 188 154, 204 120, 210 88" stroke="rgba(97, 117, 176, 1)" strokeWidth="7" fill="none" strokeLinecap="round" />
-        )}
-      </g>
-
-      <g className="tree-stage-3-additions">
-        {showBranch('branch_left_mid') && (
-          <path d="M118 118 C 96 104, 84 82, 82 58" stroke="rgba(114, 147, 205, 0.96)" strokeWidth="6" fill="none" strokeLinecap="round" />
-        )}
-        {showBranch('branch_right_mid') && (
-          <path d="M202 118 C 224 104, 236 82, 238 58" stroke="rgba(114, 147, 205, 0.96)" strokeWidth="6" fill="none" strokeLinecap="round" />
-        )}
-      </g>
-
-      <g className="tree-stage-4-additions">
-        {showBranch('branch_top_left') && (
-          <path d="M118 92 C 98 78, 84 52, 81 26" stroke="rgba(145, 166, 225, 0.96)" strokeWidth="5" fill="none" strokeLinecap="round" />
-        )}
-        {showBranch('branch_top_right') && (
-          <path d="M202 92 C 222 80, 236 52, 240 26" stroke="rgba(145, 166, 225, 0.96)" strokeWidth="5" fill="none" strokeLinecap="round" />
-        )}
-      </g>
-
-      <g className="tree-stage-5-additions">
-        {showBranch('branch_left_upper_extra') && (
-          <path d="M112 88 C 86 70, 64 52, 52 38" stroke="rgba(166, 189, 242, 0.96)" strokeWidth="4" fill="none" strokeLinecap="round" />
-        )}
-        {showBranch('branch_right_upper_extra') && (
-          <path d="M208 88 C 234 70, 256 52, 268 38" stroke="rgba(166, 189, 242, 0.96)" strokeWidth="4" fill="none" strokeLinecap="round" />
-        )}
-        {showBranch('branch_top_crown') && (
-          <path d="M160 146 C 146 108, 152 78, 160 42" stroke="rgba(185, 208, 250, 0.98)" strokeWidth="4.2" fill="none" strokeLinecap="round" />
-        )}
-      </g>
-
-      {stage >= 1 && (
-        <g className="roots">
-          <path d="M148 322 C 138 334, 126 340, 116 348" stroke="rgba(112, 155, 198, 0.7)" strokeWidth="4" fill="none" strokeLinecap="round" />
-          <path d="M172 322 C 182 334, 194 340, 204 348" stroke="rgba(112, 155, 198, 0.7)" strokeWidth="4" fill="none" strokeLinecap="round" />
-          {stage >= 3 && <path d="M160 322 C 150 344, 144 352, 140 360" stroke="rgba(112, 155, 198, 0.75)" strokeWidth="4" fill="none" strokeLinecap="round" />}
-        </g>
-      )}
-
-      <g className="tree-crown-structure">
-        {TREE_LEAF_SLOTS.slice(0, blueprint.availableLeafSlotIds.length).map((slot) => (
-          <circle key={slot.id} cx={slot.x} cy={slot.y} r={2.3} fill="rgba(164, 198, 255, 0.4)" />
+    <g className="tree-structure">
+      <g className="tree-roots">
+        {blueprint.rootPaths.map((path) => (
+          <path key={path} d={path} className="tree-root" />
         ))}
       </g>
 
-      {stage >= 2 && TREE_FLOWER_SLOTS.slice(0, blueprint.availableFlowerSlotIds.length).map((slot) => (
-        <g key={slot.id} transform={`translate(${slot.x} ${slot.y})`}>
-          <circle r="7" fill="rgba(144,214,255,0.82)" /><circle r="3" fill="rgba(255,255,255,0.9)" />
-        </g>
-      ))}
+      <path d={blueprint.trunkPath} className="tree-trunk-silhouette" />
+      <path d={blueprint.trunkHighlightPath} className="tree-trunk-highlight" />
+      {stage === 5 && <g className="stage-five-trunk-magic" aria-hidden="true">
+        <path className="mature-wood-glow" d="M191 389 C198 355 194 326 199 296 C204 268 200 237 203 208" />
+        <path className="mature-wood-engraving" d="M187 350 C178 337 181 322 193 315 C204 308 211 296 207 283 M207 359 C218 344 218 328 208 320" />
+        <path className="root-rune" d="M166 404 Q184 394 199 405 Q216 394 233 404" />
+        <circle cx="199" cy="316" r="3" />
+      </g>}
 
-      {stage >= 1 && TREE_FRUIT_SLOTS.slice(0, blueprint.availableFruitSlotIds.length).map((slot) => (
-        <g key={slot.id} transform={`translate(${slot.x} ${slot.y})`}>
-          <circle r="5" fill="rgba(111, 220, 207, 0.86)" stroke="rgba(255,255,255,0.74)" strokeWidth="1.5" />
+      <g transform={crownTransform}>
+      <g className="tree-branches">
+        {branches.map((branch) => (
+          <g key={branch.id} data-branch={branch.id}>
+            <path d={branch.silhouettePath} className="tree-branch-organic" />
+            <path d={branch.pathDefinition} className="tree-branch-highlight" strokeWidth={Math.max(1.5, branch.width * 0.22)} />
+          </g>
+        ))}
+      </g>
+
+      {stage === 5 && <g className="stage-five-signature" aria-hidden="true">
+        <ellipse className="final-crown-halo" cx="200" cy="118" rx="78" ry="63" />
+        <path className="final-melody-ribbon" d="M137 132 C163 112 181 141 205 119 C227 99 244 118 265 102" />
+        <g className="crystal-music-crown" transform="translate(200 66)">
+          <path d="M-20 7 L-14 -9 L-2 2 L8 -13 L15 3 L23 -6 L19 12 Q0 18 -20 7 Z" />
+          <circle cx="-14" cy="-9" r="2.8" /><circle cx="8" cy="-13" r="3.2" /><circle cx="23" cy="-6" r="2.8" />
+          <path className="crown-note" d="M-3 7 V-5 L8 -8 V3 M-3 7 Q-8 4 -8 9 Q-7 13 -3 10 M8 3 Q3 1 3 6 Q4 10 8 7" />
         </g>
-      ))}
+        <g className="memory-star-fruit" transform="translate(200 112)">
+          <path className="hero-stem" d="M0 -13 C-1 -20 3 -25 7 -29" />
+          <path className="hero-fruit" d="M0 -12 L5 -4 L14 -2 L8 5 L9 14 L0 10 L-9 14 L-8 5 L-14 -2 L-5 -4 Z" />
+          <path className="hero-note" d="M-2 6 V-5 L6 -7 V2 M-2 6 Q-7 4 -7 8 Q-6 11 -2 9 M6 2 Q2 0 2 4 Q3 7 6 5" />
+        </g>
+        {[
+          { x: 135, y: 185, note: '♪' },
+          { x: 268, y: 174, note: '♫' },
+          { x: 235, y: 230, note: '♪' },
+        ].map((charm) => <g key={`${charm.x}-${charm.y}`} className="memory-charm" transform={`translate(${charm.x} ${charm.y})`}>
+          <path d="M0 -11 V-3" /><path className="charm-crystal" d="M0 -4 L7 3 L0 11 L-7 3 Z" /><text x="-4" y="7">{charm.note}</text>
+        </g>)}
+        <g className="branch-tip-sparks">
+          <circle cx="141" cy="67" r="3" /><circle cx="269" cy="59" r="3" /><circle cx="63" cy="177" r="2.6" /><circle cx="336" cy="168" r="2.6" />
+        </g>
+      </g>}
+
+      <g className="tree-flowers">
+        {flowers.map((flower) => (
+          <g key={flower.id} transform={`translate(${flower.x} ${flower.y})`} className={onFlowerSelect ? 'crystal-flower interactive-tree-item' : 'crystal-flower'} role={onFlowerSelect ? 'button' : undefined} tabIndex={onFlowerSelect ? 0 : undefined} aria-label={onFlowerSelect ? 'Crystal flower' : undefined} onClick={onFlowerSelect ? () => onFlowerSelect(flower.id) : undefined} onKeyDown={onFlowerSelect ? (event) => { if (event.key === 'Enter' || event.key === ' ') onFlowerSelect(flower.id) } : undefined}>
+            {[0, 72, 144, 216, 288].map((rotation) => (
+              <path key={rotation} d="M0 -3 L-6 -14 L0 -20 L6 -14 Z" transform={`rotate(${rotation})`} />
+            ))}
+            <circle r="4.5" />
+          </g>
+        ))}
+      </g>
+
+      <g className="tree-fruits">
+        {fruitPlan.fruits.map((fruit) => (
+          <g key={fruit.id} transform={`translate(${fruit.x} ${fruit.y})`} className={onFruitSelect ? 'crystal-fruit interactive-tree-item' : 'crystal-fruit'} role={onFruitSelect ? 'button' : undefined} tabIndex={onFruitSelect ? 0 : undefined} aria-label={onFruitSelect ? 'Completed-piece fruit' : undefined} onClick={onFruitSelect ? () => onFruitSelect(fruit.id) : undefined} onKeyDown={onFruitSelect ? (event) => { if (event.key === 'Enter' || event.key === ' ') onFruitSelect(fruit.id) } : undefined}>
+            {onFruitSelect && <circle className="fruit-hit-target" r="22" aria-hidden="true" />}
+            <path d="M0 -10 L10 -3 L7 10 L-7 10 L-10 -3 Z" />
+          </g>
+        ))}
+        {fruitPlan.clusters.map((cluster) => (
+          <g key={cluster.id} transform={`translate(${cluster.x} ${cluster.y})`} className={onFruitSelect ? 'crystal-fruit music-fruit-cluster interactive-tree-item' : 'crystal-fruit music-fruit-cluster'} role={onFruitSelect ? 'button' : undefined} tabIndex={onFruitSelect ? 0 : undefined} aria-label={onFruitSelect ? `${cluster.representedFruitCount} completed-piece fruits` : undefined} data-fruit-count={cluster.representedFruitCount} onClick={onFruitSelect ? () => onFruitSelect(cluster.id) : undefined} onKeyDown={onFruitSelect ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onFruitSelect(cluster.id) } } : undefined}>
+            {onFruitSelect && <circle className="fruit-hit-target" r="22" aria-hidden="true" />}
+            <path d="M0 -12 L11 -4 L8 10 L-8 10 L-11 -4 Z" />
+            <circle className="music-fruit-count-disc" cx="8" cy="-9" r="8" />
+            <text className="music-fruit-count" x="8" y="-6" textAnchor="middle">{cluster.representedFruitCount}</text>
+          </g>
+        ))}
+      </g>
+      </g>
     </g>
   )
 }

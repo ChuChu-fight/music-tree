@@ -1,115 +1,86 @@
-import type { TreeState } from '../../domain/types'
+import type { AvatarId, TreeState } from '../../domain/types'
 import { TREE_STAGE_BLUEPRINTS, type TreeStage } from '../../domain/treeStageBlueprints'
 import { TreeStructure } from './TreeStructure'
 import { TreeLeaves } from './TreeLeaves'
 import { TreeStageTransition } from './TreeStageTransition'
+import { TreeSceneCompanions } from './TreeSceneCompanions'
+import { ParentRewardFruits } from './ParentRewardFruits'
+import type { ParentReward } from '../../domain/parentReward'
 
 type MusicTreeProps = {
   treeState: TreeState
   stage?: TreeStage
   developerPreview?: boolean
+  onLeafSelect?: (slotId: string) => void
+  onFlowerSelect?: (slotId: string) => void
+  onFruitSelect?: (slotId: string) => void
+  childAvatarId?: AvatarId
+  parentRewards?: ParentReward[]
+  onParentRewardSelect?: (reward: ParentReward) => void
 }
 
-export function MusicTree({ treeState, stage, developerPreview = false }: MusicTreeProps) {
+export function MusicTree({ treeState, stage, developerPreview = false, onLeafSelect, onFlowerSelect, onFruitSelect, childAvatarId, parentRewards = [], onParentRewardSelect }: MusicTreeProps) {
   const renderStage = stage ?? (Math.min(5, Math.max(1, treeState.stage)) as TreeStage)
   const blueprint = TREE_STAGE_BLUEPRINTS[renderStage]
-  const visibleLeafIds = blueprint.availableLeafSlotIds.slice(0, Math.max(10, Math.min(blueprint.availableLeafSlotIds.length, Math.max(treeState.leafCount, 12))))
-  const visibleFlowers = blueprint.availableFlowerSlotIds.slice(0, Math.min(blueprint.availableFlowerSlotIds.length, Math.max(2, treeState.flowerCount)))
-  const visibleFruits = blueprint.availableFruitSlotIds.slice(0, Math.min(blueprint.availableFruitSlotIds.length, Math.max(0, treeState.fruitCount)))
   const transition = developerPreview && renderStage > 1
+  const structureTransform = `translate(200 410) scale(${blueprint.structureScale.x} ${blueprint.structureScale.y}) translate(-200 -410)`
+  const crownTransform = `translate(200 410) scale(${blueprint.crownScale.x / blueprint.structureScale.x} ${blueprint.crownScale.y / blueprint.structureScale.y}) translate(-200 -410)`
+  const auraScale = renderStage === 1 ? 0.72 : blueprint.structureScale.x
 
   return (
-    <svg viewBox="0 0 360 420" className="music-tree" role="img" aria-label={`Music tree stage ${renderStage}`}>
+    <svg viewBox="0 0 400 460" className="music-tree" role="img" aria-label={`Music tree stage ${renderStage}`}>
       <defs>
-        <linearGradient id="trunkGradient" x1="0" x2="1">
-          <stop offset="0%" stopColor="#a5c9ff" />
-          <stop offset="50%" stopColor="#7aa7d8" />
-          <stop offset="100%" stopColor="#5c5b8d" />
+        <linearGradient id="trunkCrystal" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#795b52" />
+          <stop offset="24%" stopColor="#9a746a" />
+          <stop offset="48%" stopColor="#bc918c" />
+          <stop offset="67%" stopColor="#d8b9c9" />
+          <stop offset="82%" stopColor="#eadde4" />
+          <stop offset="100%" stopColor="#8a665e" />
         </linearGradient>
-        <linearGradient id="trunkGlow" x1="0" x2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
-          <stop offset="100%" stopColor="rgba(148,196,255,0.15)" />
-        </linearGradient>
+        <radialGradient id="treeAura">
+          <stop offset="0%" stopColor="rgba(255,239,247,0.38)" />
+          <stop offset="70%" stopColor="rgba(209,186,228,0.14)" />
+          <stop offset="100%" stopColor="rgba(151,126,178,0)" />
+        </radialGradient>
+        <filter id="leafGlow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.8" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="memoryGlow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="4" result="memoryBlur" />
+          <feMerge><feMergeNode in="memoryBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
       </defs>
 
-      <circle cx="180" cy="180" r={150 + treeState.glowLevel * 4} fill="rgba(170, 214, 255, 0.14)" />
-      <circle cx="180" cy="180" r={118 + treeState.glowLevel * 4} fill="rgba(255,255,255,0.08)" />
-      <ellipse cx="180" cy="370" rx="118" ry="22" fill="rgba(173, 217, 255, 0.38)" />
+      <ellipse cx="200" cy="258" rx={(145 + treeState.glowLevel * 8) * auraScale} ry={(165 + treeState.glowLevel * 8) * auraScale} fill="url(#treeAura)" opacity={0.42 + treeState.glowLevel * 0.07} />
+      {renderStage === 5 && <>
+        <ellipse className="stage-five-crown-aura" cx="200" cy="145" rx="154" ry="125" />
+        <ellipse className="stage-five-trunk-aura" cx="200" cy="310" rx="50" ry="118" />
+      </>}
+      <g className="storybook-winter-background" aria-hidden="true">
+        <path className="distant-snow-bank" d="M0 346 Q55 318 112 344 Q167 311 222 341 Q284 303 340 337 Q370 325 400 338 L400 460 L0 460 Z" />
+        <path className="near-snow-bank" d="M0 397 Q54 372 111 397 Q165 367 219 399 Q277 365 329 393 Q367 378 400 396 L400 460 L0 460 Z" />
+        {[{ x: 28, y: 82, r: 2 }, { x: 74, y: 137, r: 3 }, { x: 126, y: 55, r: 2 }, { x: 178, y: 103, r: 2.5 }, { x: 236, y: 65, r: 2 }, { x: 285, y: 118, r: 3 }, { x: 337, y: 72, r: 2.5 }, { x: 377, y: 151, r: 2 }, { x: 52, y: 213, r: 2 }, { x: 350, y: 228, r: 2.5 }].map((flake, index) => <circle key={index} className={`falling-snow snow-${index + 1}`} cx={flake.x} cy={flake.y} r={flake.r} />)}
+        <g className="snow-star snow-star-left" transform="translate(87 105)"><path d="M0 -8 V8 M-7 -4 L7 4 M7 -4 L-7 4" /></g>
+        <g className="snow-star snow-star-right" transform="translate(329 142)"><path d="M0 -7 V7 M-6 -3 L6 3 M6 -3 L-6 3" /></g>
+        <g className="music-sparkles"><text x="45" y="286">♪</text><text x="334" y="273">♫</text><path d="M72 302 C118 278 146 293 179 269" /><circle cx="76" cy="299" r="2" /><circle cx="139" cy="286" r="1.7" /></g>
+      </g>
+      <ellipse cx="200" cy="424" rx="126" ry="18" className="tree-ground-shadow" />
 
-      <g className="winter-sparkles">
-        {[...Array(14)].map((_, index) => (
-          <circle
-            key={`spark-${index}`}
-            cx={24 + index * 24}
-            cy={48 + (index % 5) * 22}
-            r={2 + (index % 3) * 0.7}
-            fill="rgba(255,255,255,0.8)"
-          />
+      <TreeSceneCompanions stage={renderStage} avatarId={childAvatarId} creatureState={treeState.creatureState} />
+
+      <g className="winter-sparkles" aria-hidden="true">
+        {[{ x: 45, y: 86 }, { x: 347, y: 102 }, { x: 34, y: 222 }, { x: 362, y: 252 }, { x: 118, y: 69 }, { x: 292, y: 56 }].map((spark, index) => (
+          <circle key={index} cx={spark.x} cy={spark.y} r={index % 2 === 0 ? 2.2 : 1.5} />
         ))}
       </g>
 
-      <g className="tree-trunk">
-        <path
-          d="M165 324 L165 162 L195 162 L195 324 Z"
-          fill="url(#trunkGradient)"
-          opacity="0.96"
-          stroke="rgba(255,255,255,0.18)"
-          strokeWidth="2"
-        />
-        <path d="M165 180 L195 180 M165 215 L195 215 M165 250 L195 250 M165 285 L195 285" stroke="rgba(255,255,255,0.24)" strokeWidth="2" />
-        <path d="M170 164 L188 144 L190 170" fill="rgba(190,232,255,0.35)" opacity="0.8" />
+      <g transform={structureTransform}>
+        <TreeStructure stage={renderStage} flowerCount={treeState.flowerCount} fruitCount={treeState.fruitCount} crownTransform={crownTransform} onFlowerSelect={onFlowerSelect} onFruitSelect={onFruitSelect} />
+        <g transform={crownTransform}><TreeLeaves stage={renderStage} leafCount={treeState.leafCount} onLeafSelect={onLeafSelect} /></g>
+        <g transform={crownTransform}><ParentRewardFruits rewards={parentRewards} onSelect={onParentRewardSelect} /></g>
       </g>
-
-      <TreeStructure stage={renderStage} treeState={treeState} />
-      <TreeLeaves stage={renderStage} visibleLeafIds={visibleLeafIds} activeLeafSlots={visibleLeafIds} />
-
-      {visibleFlowers.map((flowerId) => {
-        const slot = blueprint.availableFlowerSlotIds.find((candidate) => candidate === flowerId)
-        if (!slot) return null
-        return null
-      })}
-
-      {visibleFruits.map((fruitId) => {
-        const slot = blueprint.availableFruitSlotIds.find((candidate) => candidate === fruitId)
-        if (!slot) return null
-        const fruitSlots = {
-          'fruit_slot_01': { x: 146, y: 203 },
-          'fruit_slot_02': { x: 174, y: 201 },
-          'fruit_slot_03': { x: 123, y: 228 },
-          'fruit_slot_04': { x: 198, y: 228 },
-          'fruit_slot_05': { x: 154, y: 170 },
-          'fruit_slot_06': { x: 168, y: 170 },
-          'fruit_slot_07': { x: 110, y: 179 },
-          'fruit_slot_08': { x: 211, y: 182 },
-        }
-        const coords = fruitSlots[fruitId as keyof typeof fruitSlots] ?? { x: 160, y: 180 }
-        return (
-          <g key={fruitId} transform={`translate(${coords.x} ${coords.y})`}>
-            <circle r="7.5" fill="rgba(103, 224, 205, 0.96)" stroke="rgba(255,255,255,0.8)" strokeWidth="1.8" />
-            <path d="M0 -11 L4 -18 L8 -11" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" />
-          </g>
-        )
-      })}
-
-      {renderStage >= 2 && (
-        <g className="notes">
-          {[0, 1, 2].map((index) => (
-            <g key={`note-${index}`} transform={`translate(${120 + index * 36} ${100 + (index % 2) * 38})`}>
-              <path d="M0 0 L0 20 L12 20 L12 0 Z" fill="rgba(204, 234, 255, 0.72)" />
-              <circle cx="12" cy="20" r="4" fill="rgba(204, 234, 255, 0.72)" />
-            </g>
-          ))}
-        </g>
-      )}
-
-      {treeState.creatureState !== 'hidden' && (
-        <g className="creature" transform="translate(226 238)">
-          <ellipse cx="0" cy="0" rx="18" ry="13" fill="rgba(187,212,255,0.88)" />
-          <circle cx="-6" cy="-2" r="2.2" fill="#4c5c86" />
-          <circle cx="6" cy="-2" r="2.2" fill="#4c5c86" />
-          <path d="M-5 6 Q0 10 5 6" fill="none" stroke="#4c5c86" strokeWidth="2" strokeLinecap="round" />
-        </g>
-      )}
 
       <TreeStageTransition active={transition} fromStage={Math.max(1, renderStage - 1)} toStage={renderStage} />
     </svg>

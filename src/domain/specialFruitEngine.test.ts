@@ -12,13 +12,16 @@ const rewardProgressBase = {
 
 const makePractice = (date: string, minutes = 15): PracticeRecord => ({
   id: `practice_${date}`,
+  childId: 'child_001',
   date,
   minutes,
-  quality: 'good',
+  quality: 'focused',
   achievements: ['assigned_section'],
   customAchievement: '',
   improvement: 'small',
   parentNote: '',
+  createdAt: `${date}T12:00:00.000Z`,
+  updatedAt: `${date}T12:00:00.000Z`,
 })
 
 describe('special fruit engine', () => {
