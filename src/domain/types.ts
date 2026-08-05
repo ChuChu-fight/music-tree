@@ -1,8 +1,39 @@
 export type AppRole = 'child' | 'parent' | 'teacher'
 
-export type QualityLevel = 'low' | 'normal' | 'good'
+export type QualityLevel = 'difficult' | 'normal' | 'focused'
 export type ImprovementLevel = 'none' | 'small' | 'clear' | 'breakthrough'
+export type HomeworkItemStatus = 'active' | 'completed'
+export type HomeworkItemType = 'piece' | 'scale' | 'rhythm' | 'technique' | 'other'
+export type StarRating = 1 | 2 | 3 | 4 | 5
+export type HomeworkItemImprovementLevel = 'none' | 'small' | 'clear' | 'big'
+export type HomeworkItemScore = 20 | 40 | 60 | 80 | 100
 
+export type HomeworkItem = {
+  id: string
+  childId: string
+  title: string
+  type: HomeworkItemType
+  section?: string
+  instruction?: string
+  status: HomeworkItemStatus
+  createdAt: string
+  completedAt?: string
+}
+
+export type HomeworkItemEvaluation = {
+  homeworkItemId: string
+  score: HomeworkItemScore
+  improvement: HomeworkItemImprovementLevel
+  completed: boolean
+}
+
+export type TeacherLessonEvaluation = {
+  id: string
+  childId: string
+  lessonDate: string
+  itemEvaluations: HomeworkItemEvaluation[]
+  createdAt: string
+}
 export type TreeState = {
   treeHealth: number
   growthLevel: number
@@ -31,6 +62,7 @@ export type TreeState = {
 
 export type PracticeRecord = {
   id: string
+  childId: string
   date: string
   minutes: number
   quality: QualityLevel
@@ -38,7 +70,23 @@ export type PracticeRecord = {
   customAchievement: string
   improvement: ImprovementLevel
   parentNote: string
+  createdAt: string
+  updatedAt: string
 }
+
+export type AvatarId =
+  | 'ice_princess'
+  | 'warm_winter_princess'
+  | 'friendly_snow_buddy'
+  | 'rescue_puppy'
+  | 'rainbow_unicorn'
+
+export interface ChildProfile {
+  id: string
+  displayName: string
+  avatarId: AvatarId
+}
+
 
 export type DailyGrowthChange = {
   type: 'water' | 'leaf' | 'flower' | 'glow' | 'root'
@@ -60,7 +108,7 @@ export type HomeworkAssignment = {
   focus: string
   instruction: string
   recommendedPracticeDays: number
-  targetMinutes: number
+  targetMinutes?: number
   status: 'active' | 'completed'
   assignedAt: string
 }
@@ -71,61 +119,9 @@ export type TeacherEvaluation = {
   homeworkId: string
   score: number
   improvement: ImprovementLevel
+  effortObservation?: string
   teacherComment: string
   completedPiece: boolean
   completedPieceName: string
   createdAt: string
-}
-
-export type StageRequirement = {
-  id: string
-  label: string
-  required: number
-  actual: number
-  completed: boolean
-}
-
-export type StageProgressionInput = {
-  currentStage: number
-  stageEntryDate: string
-  currentDate: string
-  validPracticeDates?: string[]
-  qualityByDate?: Record<string, string>
-  teacherEvaluations?: Array<{
-    id: string
-    createdAt: string
-    score: number
-    improvement?: string
-  }>
-  learningCycles?: Array<{
-    id: string
-    childId?: string
-    homeworkId?: string
-    startedAt?: string
-    validPracticeDates?: string[]
-    teacherEvaluationId?: string | null
-    completedPieceIds?: string[]
-    status?: string
-  }>
-  completedPieces?: Array<{
-    id: string
-    completionDate?: string
-    confirmedBy?: string
-  }>
-  reviewHistory?: Array<{ id: string; date?: string; type?: string }>
-  concertRecords?: Array<{ id: string; date?: string; name?: string }>
-}
-
-export type StageProgressionResult = {
-  currentStage: number
-  nextStage: number
-  eligibleForNextStage: boolean
-  elapsedDays: number
-  validPracticeDays: number
-  qualityRatio: number
-  teacherCheckins: number
-  completedLearningCycles: number
-  completedPieceCount: number
-  requirements: StageRequirement[]
-  summary: string
 }
