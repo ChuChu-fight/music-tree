@@ -74,7 +74,7 @@ describe('daily Water repository enforcement', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-01-01T23:30:00.000Z'))
     try {
-      const repository = createLocalRepository(new MemoryStorage())
+      const repository = createLocalRepository(new MemoryStorage(), 'Europe/Berlin')
       repository.savePracticeRecord(input(20, 'midnight', '2026-01-02'))
       expect(repository.getDailyWater()).toBe(3)
     } finally { vi.useRealTimers() }
